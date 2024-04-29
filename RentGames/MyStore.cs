@@ -37,13 +37,13 @@ class MyStore{
 
         //1
         app.MapGet("/games", ([FromServices] AppDbContext context) => {
-            var games = context.Games.ToList();
+            List<Game> games = context.Games.ToList();
             return games.Any() ? Results.Ok(games) : Results.NotFound();
         }).Produces<List<Game>>();
 
         //2
         app.MapGet("/games/promo", ([FromServices] AppDbContext context) => {
-            var promos = context.Games.Where(g => g.IsPromo).ToList();
+            List<Game> promos = context.Games.Where(g => g.IsPromo).ToList();
             return promos.Any() ? Results.Ok(promos) : Results.NotFound("Não foi localizada nenhuma promoção.");
         }).Produces<List<Game>>();
 
@@ -54,7 +54,21 @@ class MyStore{
         }).Produces<Game>();
 
         //4
-        app.MapPost("/games", ([FromServices] AppDbContext context, Game game) => {
+        app.MapPost("/games", ([FromServices] AppDbContext context, [FromBody] Game game) => {
+
+            List<string> errorMessages = new List<string>();
+            if (game.Price <= 0 || game.Price > 10000)
+                errorMessages.Add("O preço deve estar entre 0.01 e 10000.00.");
+            if (string.IsNullOrEmpty(game.Name))
+                errorMessages.Add("O nome do jogo é obrigatório.");
+            else if (game.Name.Length > 100)
+                errorMessages.Add("O nome do jogo não pode exceder 100 caracteres.");
+
+
+            if (errorMessages.Any())
+                return Results.BadRequest(new { Errors = errorMessages });
+
+
             context.Games.Add(game);
             context.SaveChanges();
             return Results.Created($"/games/{game.Id}", game);
@@ -66,7 +80,7 @@ class MyStore{
             if (existingGame == null) {
                 return Results.NotFound("Jogo não encontrado.");
             }
-            var newGame = existingGame with {
+            Game newGame = existingGame with {
                 Price = updatedGame.Price,
                 Name = updatedGame.Name,
                 IsPromo = updatedGame.IsPromo
@@ -102,24 +116,7 @@ class MyStore{
             context.SaveChanges();
             
             return Results.Ok(updatedGame);
-        }).Produces<Game>().WithName("UpdateGamePromoStatus");
-
-
-        //Criando dados previamente para testar
-        using (var scope = app.Services.CreateScope())
-        {
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            if (!context.Games.Any())
-            {
-                context.Games.AddRange(
-                    new Game(59.99f, "The Witcher 3", false, true),
-                    new Game(40.00f, "Cyberpunk 2077", true, true),
-                    new Game(10.00f, "O Jogo", true, true)
-                );
-                context.SaveChanges();
-            }
-        }
-
+        }).Produces<Game>();
 
         app.Run();
     }
