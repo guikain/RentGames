@@ -1,7 +1,7 @@
 
 using Models.Game;
-using Microsoft.AspNetCore.Mvc;
 using RentGames.Data;
+using Microsoft.AspNetCore.Mvc;
 
 class MyStore{
     public static void Main(String[] args) {
