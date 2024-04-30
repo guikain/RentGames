@@ -81,6 +81,7 @@ class MyStore{
                 return Results.NotFound("Jogo não encontrado.");
             }
             Game newGame = existingGame with {
+                Id = id,
                 Price = updatedGame.Price,
                 Name = updatedGame.Name,
                 IsPromo = updatedGame.IsPromo
